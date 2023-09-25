@@ -10,6 +10,7 @@ from awsume.awsumepy import hookimpl, safe_print
 from awsume.awsumepy.lib import profile as profile_lib
 from awsume.awsumepy.lib import cache as cache_lib
 from awsume.awsumepy.lib.logger import logger
+from helpers.profile import *
 
 
 # Truncate proxied subprocess output to avoid stack trace spam
@@ -152,31 +153,25 @@ def retrieve_mfa_from_1password_item(config, profile_name):
 @hookimpl
 def pre_get_credentials(config: dict, arguments: argparse.Namespace, profiles: dict):
     try:
-        # safe_print(arguments)
         target_profile_name = profile_lib.get_profile_name(config, profiles, arguments.target_profile_name)
+        target_profile = profiles.get(target_profile_name)
 
-        if not profiles.get(target_profile_name):
+        # If thre's no profile then skip because it's yet managed from awsume
+        if not target_profile:
             logger.debug('No profile %s found, skip plugin flow' % target_profile_name)
             return None
 
-        # Create fake profile to be compliant with op plugin, that permits to avoid source_profile in ~/.aws/config
-        if(not profiles.get(target_profile_name).get('source_profile') and not profiles.get(target_profile_name).get('credential_source') and not profiles.get(target_profile_name).get('credential_process')):
-            fake_profile = target_profile_name + "_source_profile"
-            profiles[target_profile_name]['source_profile'] = fake_profile
-            profiles[fake_profile] = {}
-        # If the source profile is not setted into ~/.aws/credentials but is associated to a 1password item censed into configs, create it
-        elif not profiles.get(profiles.get(target_profile_name).get('credential_source')):
-            if config.get('1password').get('profiles', {}).get(profiles.get(target_profile_name).get('source_profile')):
-                profiles[profiles.get(target_profile_name).get('source_profile')] = {}
-
-
         if target_profile_name != None:
-            # try:
+
+            # Create fake profile to be compliant with op plugin, that permits to avoid source_profile in ~/.aws/config
+            if not has_some_source(target_profile):
+                set_fake_profile(profiles, target_profile_name)
+            # If the source profile is not setted into ~/.aws/credentials but is associated to a 1password item censed into configs, create it
+            elif not is_source_profile_registered(profiles, target_profile) and is_profile_registered_in_1password_config(config, target_profile):
+                profiles[target_profile.get('source_profile')] = {}
+
             role_chain = profile_lib.get_role_chain(config, arguments, profiles, target_profile_name)
             first_profile_name = role_chain[0]
-            # except Exception:
-                # logger.debug('No role chain found, use argument target_profile')
-                # first_profile_name = target_profile_name
             first_profile = profiles.get(first_profile_name)
             hydrate_profile(config, first_profile_name, first_profile)
             source_credentials = profile_lib.profile_to_credentials(first_profile)
@@ -185,7 +180,6 @@ def pre_get_credentials(config: dict, arguments: argparse.Namespace, profiles: d
             cache_session = cache_lib.read_aws_cache(cache_file_name)
             valid_cache_session = cache_session and cache_lib.valid_cache_session(cache_session)
 
-            # safe_print(profiles)
 
             mfa_serial = profile_lib.get_mfa_serial(profiles, first_profile_name)
             if mfa_serial and (not valid_cache_session or arguments.force_refresh) and not arguments.mfa_token:
