@@ -2,23 +2,19 @@ import argparse
 import colorama
 import traceback
 import sys
-import json
-
-from subprocess import Popen, PIPE
 
 from awsume.awsumepy import hookimpl, safe_print
 from awsume.awsumepy.lib import profile as profile_lib
 from awsume.awsumepy.lib import cache as cache_lib
 from awsume.awsumepy.lib.logger import logger
+
 from helpers.profile import *
+from helpers.opCLI import *
+from helpers.config import *
 
 
 # Truncate proxied subprocess output to avoid stack trace spam
 MAX_OUTPUT_LINES = 2
-
-# Cache some 1Password data to avoid multiple calls
-PLG_1PASSWORD_ITEM_CACHED = None
-
 
 # Map an MFA serial to a 1Password vault item
 def find_item(config, mfa_serial):
@@ -58,40 +54,7 @@ def beautify(msg):
         return msg
 
 
-# Call 1Password to get an OTP for a given vault item.
-def get_otp(title):
-    try:
-        op = Popen(['op', 'item', 'get', '--otp', title],
-                   stdout=PIPE, stderr=PIPE)
-        linecount = 0
-        while True:
-            msg = op.stderr.readline().decode()
-            if msg == '' and op.poll() is not None:
-                break
-            elif msg != '' and linecount < MAX_OUTPUT_LINES:
-                msg = beautify(msg)
-                if msg:
-                    safe_print('1Password: ' + msg,
-                               colorama.Fore.CYAN)
-                    linecount += 1
-            else:
-                logger.debug(msg.strip('\n'))
-        if op.returncode != 0:
-            return None
-        return op.stdout.readline().decode().strip('\n')
-    except FileNotFoundError:
-        logger.error('Failed: missing `op` command')
-        return None
-
-
-# Print sad message to console with instructions for filing a bug report.
-# Log stack trace to stderr in lieu of safe_print.
-def handle_crash():
-    safe_print('Error invoking 1Password plugin; please file a bug report:\n  %s' %
-               ('https://github.com/xeger/awsume-1password-plugin/issues/new/choose'), colorama.Fore.RED)
-    traceback.print_exc(file=sys.stderr)
-
-
+### START Manage awsume profiles adding aws keys directly from 1password CLI, withous pass via ~/.aws/credentials ###
 # Hydrate a profile with credentials from 1password, if not specified in the profile itself
 def hydrate_profile(config, first_profile_name, first_profile):
     cfg = get_profile_settings_from_1password_config(config, first_profile_name)
@@ -109,45 +72,21 @@ def hydrate_key_from_1password(key, first_profile, first_profile_name, title):
         logger.debug('No %s setted for %s, try to retrieve from 1password' % (key, first_profile_name))
         item = retrieve_item_from_1password(title)
         if item:
-            key_conventions = [key, key.replace("_", " "), key.replace("aws_", ""), key.replace("aws_", "").replace("_", " ")]
-            for field in item.get('fields', []):
-                if field.get('label', False) in key_conventions:
-                    safe_print('Obtained %s from 1Password item: %s' % (key, title), colorama.Fore.CYAN)
-                    first_profile[key] = field.get('value')
-                    return True
-            logger.error('No %s found in 1password item %s' % (key, title))
+            value = get_aws_value_in_item(key, item)
+            if(value):
+                safe_print('Obtained %s from 1Password item: %s' % (key, title), colorama.Fore.CYAN)
+                first_profile[key] = value
+            else:
+                logger.error('No %s found in 1password item %s' % (key, title))
+### END Manage awsume profiles adding aws keys directly from 1password CLI, withous pass via ~/.aws/credentials ###
 
-def retrieve_item_from_1password(title):
-    # TODO: use file cache...
-    global PLG_1PASSWORD_ITEM_CACHED
-    if PLG_1PASSWORD_ITEM_CACHED is None:
-        try:
-            process = Popen(['op', 'item', 'get', title, '--format', 'json'],
-                    stdout=PIPE, stderr=PIPE)
-            output, _ = process.communicate()
-            try:
-                output_str = output.decode('utf-8') 
-                PLG_1PASSWORD_ITEM_CACHED = json.loads(output_str)
-            except json.JSONDecodeError:
-                logger.error("OP command output is not in JSON format")
-                PLG_1PASSWORD_ITEM_CACHED = False
-        except FileNotFoundError:
-            logger.error('Failed: missing `op` command')
-            return None
-    return PLG_1PASSWORD_ITEM_CACHED
 
-def get_profile_settings_from_1password_config(config, profile_name):
-    return config.get('1password', {}).get('profiles', {}).get(profile_name, {})
-
-def retrieve_mfa_from_1password_item(config, profile_name):
-    title = get_profile_settings_from_1password_config(config, profile_name).get('item')
-    item = retrieve_item_from_1password(title)
-    label = "one-time password"
-    if item:
-        for field in item.get('fields', []):
-            if field.get('label', False) == label:
-                return field.get('totp')
-        logger.debug('No %s found in 1password item %s' % (label, title))
+# Print sad message to console with instructions for filing a bug report.
+# Log stack trace to stderr in lieu of safe_print.
+def handle_crash():
+    safe_print('Error invoking 1Password plugin; please file a bug report:\n  %s' %
+               ('https://github.com/xeger/awsume-1password-plugin/issues/new/choose'), colorama.Fore.RED)
+    traceback.print_exc(file=sys.stderr)
 
 
 @hookimpl
@@ -179,7 +118,6 @@ def pre_get_credentials(config: dict, arguments: argparse.Namespace, profiles: d
             cache_file_name = 'aws-credentials-' + source_credentials.get('AccessKeyId')
             cache_session = cache_lib.read_aws_cache(cache_file_name)
             valid_cache_session = cache_session and cache_lib.valid_cache_session(cache_session)
-
 
             mfa_serial = profile_lib.get_mfa_serial(profiles, first_profile_name)
             if mfa_serial and (not valid_cache_session or arguments.force_refresh) and not arguments.mfa_token:
