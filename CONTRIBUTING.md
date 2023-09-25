@@ -11,6 +11,9 @@ pip3 install pipenv
 pipenv install
 ```
 
+then from `pipenv shell` you can install AWSUME (`pip3 install awsume`).
+
+
 ### AWSume Configuration
 
 To test this package, you will need profile(s) in your `~/.awsume/config.yml` that require MFA.
@@ -44,10 +47,30 @@ Enter the venv and install your latest changes from local sources.
 
 ```sh
 pipenv shell
-pip3 install .
 ```
 
-Now you can invoke `awsume` to test your changes.
+ and test your changes (I suggest with `-r` flag to force a refresh of the credentials):
+
+```shell
+awsume <some_profile> -r
+```
+
+If your canges are not propagating, try to force the local plugin installation:
+
+```shell
+pip3 install -e .
+```
+
+and all in one:
+
+```shell
+pip3 install -e . && awsume <some_profile> -r
+```
+
+> NOTE: always in `pipenv shell`
+
+
+
 
 ## Release Your Changes
 
