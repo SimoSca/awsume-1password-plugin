@@ -156,7 +156,7 @@ def pre_get_credentials(config: dict, arguments: argparse.Namespace, profiles: d
         target_profile_name = profile_lib.get_profile_name(config, profiles, arguments.target_profile_name)
 
         if not profiles.get(target_profile_name):
-            logger.debug('No profile %s found' % target_profile_name)
+            logger.debug('No profile %s found, skip plugin flow' % target_profile_name)
             return None
 
         # Create fake profile to be compliant with op plugin, that permits to avoid source_profile in ~/.aws/config
