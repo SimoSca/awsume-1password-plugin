@@ -23,7 +23,7 @@ pip3 install awsume-1password-plugin
 If you've installed awsume with `pipx`, this will install the console plugin in awsume's virtual environment:
 
 ```
-pipx inject awsume awsume-1password-plugin
+pipx inject awsume awsume-1password-plugin-simosca
 ```
 
 ### Set Up 1Password

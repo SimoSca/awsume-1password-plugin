@@ -69,7 +69,14 @@ pip3 install -e . && awsume <some_profile> -r
 
 > NOTE: always in `pipenv shell`
 
+### Update in pipx:
 
+In pipx you can directly remove the plugin and reinstall it:
+
+```shell
+rm -rf ~/.local/pipx/venvs/awsume/lib/python3.10/site-packages/awsume_1password_plugin-simosca-*
+pipx inject awsume awsume-1password-plugin-simosca
+```
 
 
 ## Release Your Changes
