@@ -1,16 +1,16 @@
 from setuptools import setup
 
 setup(
-    name='awsume-1password-plugin',
-    version='1.2.1',
-    description='Automates awsume MFA entry via 1Password CLI.',
+    name='awsume-1password-plugin-simosca',
+    version='1.0.0',
+    description='Automates awsume MFA and AWS KEYS via 1Password CLI.',
     entry_points={
         'awsume': [
             '1password = 1password'
         ]
     },
-    author='Tony Spataro',
-    author_email='pypi@tracker.xeger.net',
-    url='https://github.com/xeger/awsume-1password-plugin',
+    author='Inodracs',
+    author_email='inodracs.enomis@gmail.com',
+    url='https://github.com/SimoSca/awsume-1password-plugin/tree/inodracs',
     py_modules=['1password'],
 )
