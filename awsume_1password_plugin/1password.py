@@ -8,9 +8,9 @@ from awsume.awsumepy.lib import profile as profile_lib
 from awsume.awsumepy.lib import cache as cache_lib
 from awsume.awsumepy.lib.logger import logger
 
-from helpers.profile import *
-from helpers.opCLI import *
-from helpers.config import *
+from .helpers.profile import *
+from .helpers.opCLI import *
+from .helpers.config import *
 
 
 # Truncate proxied subprocess output to avoid stack trace spam
