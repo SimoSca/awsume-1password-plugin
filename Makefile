@@ -7,4 +7,5 @@ clean:
 	rm -Rf build dist *.egg-info
 
 publish:
-	twine upload --identity F4DD3CEDB0E24417 --sign --username xeger dist/*
+	# with __token__ you have to insert you API TOKEN setted into PYPI
+	twine upload --username __token__ dist/*
