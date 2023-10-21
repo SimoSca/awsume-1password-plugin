@@ -57,6 +57,9 @@ def get_otp(title):
 
 def retrieve_mfa_from_1password_item(config, profile_name):
     title = get_profile_settings_from_1password_config(config, profile_name).get('item')
+    if not title:
+        logger.debug('No item specified for profile %s' % profile_name)
+        return None
     item = retrieve_item_from_1password(title)
     label = "one-time password"
     if item:
