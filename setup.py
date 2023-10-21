@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='awsume-1password-plugin-simosca',
-    version='1.0.5',
+    version='1.0.6',
     description='Automates awsume MFA and AWS KEYS via 1Password CLI.',
     entry_points={
         'awsume': [
