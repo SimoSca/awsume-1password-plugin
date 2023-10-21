@@ -94,3 +94,5 @@ make clean
 make build
 make publish
 ```
+
+> NOTE: always in `pipenv shell` if you've installed `twine` in that environment.
