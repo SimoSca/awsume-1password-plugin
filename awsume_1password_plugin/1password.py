@@ -85,7 +85,7 @@ def hydrate_key_from_1password(key, first_profile, first_profile_name, title):
 # Log stack trace to stderr in lieu of safe_print.
 def handle_crash():
     safe_print('Error invoking 1Password plugin; please file a bug report:\n  %s' %
-               ('https://github.com/xeger/awsume-1password-plugin/issues/new/choose'), colorama.Fore.RED)
+               ('https://github.com/simosca/awsume-1password-plugin/issues'), colorama.Fore.RED)
     traceback.print_exc(file=sys.stderr)
 
 
