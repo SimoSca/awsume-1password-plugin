@@ -115,6 +115,11 @@ def pre_get_credentials(config: dict, arguments: argparse.Namespace, profiles: d
             hydrate_profile(config, first_profile_name, first_profile)
             source_credentials = profile_lib.profile_to_credentials(first_profile)
 
+            # Fix to work with other auth methods like credential_process
+            if source_credentials.get('AccessKeyId') == None:
+                logger.debug('No credentials found for profile %s, skip plugin flow' % target_profile_name)
+                return None
+
             cache_file_name = 'aws-credentials-' + source_credentials.get('AccessKeyId')
             cache_session = cache_lib.read_aws_cache(cache_file_name)
             valid_cache_session = cache_session and cache_lib.valid_cache_session(cache_session)
